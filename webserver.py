@@ -31,7 +31,20 @@ class webServerHandler(BaseHTTPRequestHandler):
                 print output
                 return
 
-                #output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
+            if self.path.endswith("/restaurants/new"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                output = ""
+                output += "<html><body>"
+                output += "Add new Restaurant"
+                output += '''<form method='POST' enctype='multipart/form-data' action='/restaurants'>
+                            <h2>Name of restaurant to add:</h2><input name="name" type="text" >
+                            <input type="submit" value="Submit"></form>'''
+                output += "</body></html"
+                self.wfile.write(output)
+                print output
+                return
 
         except IOError:
             self.send_error(404, "File Not Found %s" % self.path)
@@ -44,19 +57,21 @@ class webServerHandler(BaseHTTPRequestHandler):
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
-                messagecontent = fields.get('message')
+                messagecontent = fields.get('name')
+            newResto = Restaurant(name = messagecontent[0])
+            session.add(newResto)
+            session.commit()
             print "creating output"
             output = ""
             output += "<html><body>"
-            print output
-            print "no output!"
-            output += " <h2> Okay, how about this: </h2>"
-            output += "<h1> %s </h1>" % messagecontent[0]
-            output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
+            output += " <h2>Restaurant added!</h2>"
+            restolist = session.query(Restaurant).all()
+            for resto in restolist:
+                output += ("</br>%s</br>" % resto.name)
+                output += "<a href=#>Edit</a></br>"
+                output += "<a href=#>Delete</a>"
             output += "</body></html>"
-            print "output created"
             self.wfile.write(output)
-            print "output written"
             print output
 
         except:
